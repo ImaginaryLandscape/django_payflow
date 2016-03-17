@@ -6,4 +6,5 @@ setup(name='django_payflow',
       install_requires=(
           'requests',
       ),
+      packages=['django_payflow']
 )
