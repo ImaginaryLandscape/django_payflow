@@ -1,2 +1,6 @@
 *.pyc
 venv/
+django_payflow_testing/
+build/
+dist/
+django_payflow.egg-info/
