@@ -20,6 +20,8 @@ class PayflowPayment(object):
         
          Arguments:
              trxtype: type of credit card transaction (default is 'S' for 'sale')
+             (Other trxtype options listed at
+             https://developer.paypal.com/docs/classic/payflow/integration-guide/#core-credit-card-parameters)
              kwargs: any extra arguments that payflow allows. ex (USER1, USER2, ORDID) etc..
         """
 
