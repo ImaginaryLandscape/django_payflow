@@ -67,10 +67,10 @@ class PayflowPayment(object):
             CREATESECURETOKEN="Y",
             SECURETOKENID=secure_token_id,
         )
-
         payload.update(self.kwargs)
 
-        request = Request('POST', self.endpoint_url, data=payload)
+        payload_str = '&'.join("%s=%s" % (k, v) for k, v in payload.items())
+        request = Request('POST', self.endpoint_url, data=payload_str)
         prepared_request = request.prepare()
 
         return prepared_request
