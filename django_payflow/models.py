@@ -72,10 +72,9 @@ class PayflowPayment(object):
         payload_str = '&'.join("%s=%s" % (k, v) for k, v in payload.items())
         request = Request('POST', self.endpoint_url, data=payload_str)
         prepared_request = request.prepare()
-
         return prepared_request
 
-    def get_secure_token_and_secure_token_id(self, amount, **kwargs):
+    def get_secure_token_and_secure_token_id(self, amount):
         """ Create the SECURETOKEN and SECURETOKENID parameters need for a valid payflow transaction.
 
         Arguments:
@@ -89,7 +88,7 @@ class PayflowPayment(object):
         """
 
         secure_token_id = self._generate_secure_token_id()
-        prepared_request = self._prepare_secure_token_request(secure_token_id, amount, **kwargs)
+        prepared_request = self._prepare_secure_token_request(secure_token_id, amount)
 
         session = Session()
         response = session.send(prepared_request,)
@@ -99,7 +98,32 @@ class PayflowPayment(object):
                 response.status_code))
 
         response_dict = urlparse.parse_qs(response.text)
-
         secure_token = response_dict['SECURETOKEN'][0]
 
         return secure_token, secure_token_id
+
+    def capture_payment(self, pnref):
+        payload = dict(
+            TRXTYPE=self.trxtype,
+            TENDER='C',
+            PARTNER=self.partner,
+            VENDOR=self.merchant_login,
+            USER=self.user,
+            PWD=self.password,
+            ORIGID=pnref
+        )
+        payload.update(self.kwargs)
+
+        payload_str = '&'.join("%s=%s" % (k, v) for k, v in payload.items())
+        request = Request('POST', self.endpoint_url, data=payload_str)
+        prepared_request = request.prepare()
+
+        session = Session()
+        response = session.send(prepared_request,)
+
+        if response.status_code >= 300:
+            raise Exception("Unable to connect to processor - http code {}".format(
+                response.status_code))
+
+        response_dict = urlparse.parse_qs(response.text)
+        return response_dict
