@@ -12,25 +12,22 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+"""A PayflowPayment object provides methods used to make various calls to the Payflow API.
 
+For more details, see the Payflow Pro developers' guide at
+https://www.paypalobjects.com/webstatic/en_US/developer/docs/pdf/pp_payflowpro_guide.pdf
+
+and also details of paramaters that can be passed to the API at
+https://developer.paypal.com/docs/classic/payflow/integration-guide/#core-credit-card-parameters
+
+"""
 class PayflowPayment(object):
 
-    def __init__(self, trxtype='S', **kwargs):
-        """ Create object with the minimum requirements neccessary for succeful transaction.
-        
-         Arguments:
-             trxtype: type of credit card transaction (default is 'S' for 'sale')
-             (Other trxtype options listed at
-             https://developer.paypal.com/docs/classic/payflow/integration-guide/#core-credit-card-parameters)
-             kwargs: any extra arguments that payflow allows. ex (USER1, USER2, ORDID) etc..
-        """
-
+    def __init__(self):
         self.partner = settings.DJANGO_PAYFLOW['PARTNER']
         self.merchant_login = settings.DJANGO_PAYFLOW['MERCHANT_LOGIN']
         self.user = settings.DJANGO_PAYFLOW['USER']
         self.password = settings.DJANGO_PAYFLOW['PASSWORD']
-        self.trxtype = trxtype
-        self.kwargs = kwargs
 
         if settings.DJANGO_PAYFLOW['TEST_MODE'] == True:
             self.endpoint_url = 'https://pilot-payflowpro.paypal.com/'
@@ -38,92 +35,83 @@ class PayflowPayment(object):
             self.endpoint_url = 'https://payflowpro.paypal.com/'
 
     def _generate_secure_token_id(self):
-        """ Generate secure token with uuid 
+        """Generate secure token with uuid
 
-        Returns:
-            token: The 'SERCURETOKENID' parameter that will be sent to the paypal api endpoint
+        Returns: token: The 'SECURETOKENID' parameter that will be
+            sent to the paypal api endpoint
+
         """
 
         uid = uuid.uuid4()
         token = uid.hex
         return token
 
-    def _prepare_secure_token_request(self, secure_token_id, amount):
-        """ Prepare an http request object with all of the neccesarry request parameters.
-
-        In order to access the payflow api and get a secure token, we need to authenticate 
-        ourselves with our credentials and include (at a minimum) the following 
-        parameters (TRXTYPE, AMT, CREATESECURETOKEN, SECURETOKENID). When this request is
-        sent, it will return a 'secure token'.
-        """
-        
-        payload = dict(
+    def _get_login_credentials(self):
+        return dict(
             PARTNER=self.partner,
             VENDOR=self.merchant_login,
             USER=self.user,
-            PWD=self.password,
-            TRXTYPE=self.trxtype,
-            AMT=amount,
-            CREATESECURETOKEN="Y",
-            SECURETOKENID=secure_token_id,
+            PWD=self.password
         )
-        payload.update(self.kwargs)
+
+    def _get_response_dict(self, custom_params):
+
+        """Send a request to the Payflow API and return the response.
+
+        """
+        payload = self._get_login_credentials()
+        payload.update(custom_params)
 
         payload_str = '&'.join("%s=%s" % (k, v) for k, v in payload.items())
         request = Request('POST', self.endpoint_url, data=payload_str)
         prepared_request = request.prepare()
-        return prepared_request
 
-    def get_secure_token_and_secure_token_id(self, amount):
-        """ Create the SECURETOKEN and SECURETOKENID parameters need for a valid payflow transaction.
+        session = Session()
+        response = session.send(prepared_request,)
+
+        if response.status_code >= 300:
+            raise Exception("Unable to connect to processor - http code {}".format(
+                response.status_code))
+
+        response_dict = urlparse.parse_qs(response.text)
+        return response_dict
+
+    def get_secure_token_and_secure_token_id(self, amount, **kwargs):
+        """Create the SECURETOKEN and SECURETOKENID parameters need for a
+        valid payflow transaction.
 
         Arguments:
             amount: the total amount the charge the credit card
 
         Returns:
-            secure_token: correponds to the SECURETOKEN parameter that will be returned after the 
-                          payflow request is sent
-            secure_token_id: corresponds to the SECURETOKENID paramter that will be sent in the
-                             payflow request
+            secure_token: the SECURETOKEN parameter that will be returned
+                          in the response from PayPal
+            secure_token_id: the SECURETOKENID paramter that will be sent
+                             in the payflow request
+
         """
-
         secure_token_id = self._generate_secure_token_id()
-        prepared_request = self._prepare_secure_token_request(secure_token_id, amount)
-
-        session = Session()
-        response = session.send(prepared_request,)
-
-        if response.status_code >= 300:
-            raise Exception("Unable to connect to processor - http code {}".format(
-                response.status_code))
-
-        response_dict = urlparse.parse_qs(response.text)
+        params = dict (
+            TRXTYPE=kwargs.pop("TRXTYPE", "S"),  # Default is "S" for "sale", can be
+                                                 # overridden as "A" for authorization only.
+            AMT=amount,
+            CREATESECURETOKEN="Y",
+            SECURETOKENID=secure_token_id
+        )
+        params.update(kwargs)
+        response_dict = self._get_response_dict(params)
         secure_token = response_dict['SECURETOKEN'][0]
-
         return secure_token, secure_token_id
 
-    def capture_payment(self, pnref):
-        payload = dict(
-            TRXTYPE=self.trxtype,
-            TENDER='C',
-            PARTNER=self.partner,
-            VENDOR=self.merchant_login,
-            USER=self.user,
-            PWD=self.password,
+    def capture_payment(self, pnref, **kwargs):
+        """Capture a previously authorized PayPal transaction
+
+        """
+        params = dict(
+            TRXTYPE="D",
+            TENDER="C",
             ORIGID=pnref
         )
-        payload.update(self.kwargs)
-
-        payload_str = '&'.join("%s=%s" % (k, v) for k, v in payload.items())
-        request = Request('POST', self.endpoint_url, data=payload_str)
-        prepared_request = request.prepare()
-
-        session = Session()
-        response = session.send(prepared_request,)
-
-        if response.status_code >= 300:
-            raise Exception("Unable to connect to processor - http code {}".format(
-                response.status_code))
-
-        response_dict = urlparse.parse_qs(response.text)
+        params.update(kwargs)
+        response_dict = self._get_response_dict(params)
         return response_dict
