@@ -129,3 +129,16 @@ class PayflowPayment(object):
         params.update(kwargs)
         response_dict = self._get_response_dict(params)
         return response_dict
+
+    def refund_payment(self, pnref, **kwargs):
+        """Issue a refund for a previously authorized PayPal transaction
+
+        """
+        params = dict(
+            TRXTYPE="C",
+            TENDER="C",
+            ORIGID=pnref
+        )
+        params.update(kwargs)
+        response_dict = self._get_response_dict(params)
+        return response_dict
