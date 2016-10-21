@@ -63,6 +63,20 @@ class PayflowPayment(object):
         payload.update(custom_params)
 
         payload_str = '&'.join("%s=%s" % (k, v) for k, v in payload.items())
+
+        # PayPal doesn't allow double quotes in parameter values
+        # because double quotes should surround the PARMLIST. So
+        # replace any double quotes with single quotes.
+        # https://www.paypalobjects.com/webstatic/en_US/developer/docs/pdf/pp_payflowpro_guide.pdf
+        # under "connection parameters -> PARMLIST syntax guidelines"
+        payload_str = payload_str.replace('"',"'")
+
+        # Now surround with double quotes
+        # According to their documentation you are supposed to 
+        # surround the parameter string with double quotes;
+        # However the transaction does not go through if you do.
+        #payload_str = "\"%s\"" % payload_str
+
         request = Request('POST', self.endpoint_url, data=payload_str)
         prepared_request = request.prepare()
 
