@@ -12,6 +12,7 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+
 """A PayflowPayment object provides methods used to make various calls to the Payflow API.
 
 For more details, see the Payflow Pro developers' guide at
@@ -21,6 +22,8 @@ and also details of paramaters that can be passed to the API at
 https://developer.paypal.com/docs/classic/payflow/integration-guide/#core-credit-card-parameters
 
 """
+
+
 class PayflowPayment(object):
 
     def __init__(self):
@@ -69,13 +72,13 @@ class PayflowPayment(object):
         # replace any double quotes with single quotes.
         # https://www.paypalobjects.com/webstatic/en_US/developer/docs/pdf/pp_payflowpro_guide.pdf
         # under "connection parameters -> PARMLIST syntax guidelines"
-        payload_str = payload_str.replace('"',"'")
+        payload_str = payload_str.replace('"', "'")
 
         # Now surround with double quotes
-        # According to their documentation you are supposed to 
+        # According to their documentation you are supposed to
         # surround the parameter string with double quotes;
         # However the transaction does not go through if you do.
-        #payload_str = "\"%s\"" % payload_str
+        # payload_str = "\"%s\"" % payload_str
 
         request = Request('POST', self.endpoint_url, data=payload_str)
         prepared_request = request.prepare()
@@ -105,7 +108,7 @@ class PayflowPayment(object):
 
         """
         secure_token_id = self._generate_secure_token_id()
-        params = dict (
+        params = dict(
             TRXTYPE=kwargs.pop("TRXTYPE", "S"),  # Default is "S" for "sale", can be
                                                  # overridden as "A" for authorization only.
             AMT=amount,
@@ -114,8 +117,11 @@ class PayflowPayment(object):
         )
         params.update(kwargs)
         response_dict = self._get_response_dict(params)
-        secure_token = response_dict['SECURETOKEN'][0]
-        return secure_token, secure_token_id
+        secure_token = response_dict.get('SECURETOKEN', None)
+        if secure_token is None:  # raise an exception if there is no token in the response
+            raise Exception(
+                "`SECURETOKEN` not returned in response: {0}".format(response_dict['RESPMSG']))
+        return secure_token[0], secure_token_id
 
     def capture_payment(self, pnref, **kwargs):
         """Capture a previously authorized PayPal transaction
