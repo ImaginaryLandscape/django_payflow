@@ -2,7 +2,7 @@
 
 django_payflow accepts a python dictionary for all settings 
 
-The minimun settings needed are shown below:
+The minimum settings needed are shown below:
 
 ```
 DJANGO_PAYFLOW = {
