@@ -1,9 +1,6 @@
 import logging
 
-try:
-    import urllib.parse as urlparse
-except ImportError:
-    import urlparse
+import urllib.parse
 import uuid
 
 from requests import Request, Session
@@ -87,7 +84,7 @@ class PayflowPayment(object):
             raise Exception("Unable to connect to processor - http code {}".format(
                 response.status_code))
 
-        response_dict = urlparse.parse_qs(response.text)
+        response_dict = urllib.parse.parse_qs(response.text)
         return response_dict
 
     def get_secure_token_and_secure_token_id(self, amount, **kwargs):
