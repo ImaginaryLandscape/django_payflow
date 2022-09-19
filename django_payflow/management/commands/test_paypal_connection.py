@@ -68,8 +68,8 @@ class Command(BaseCommand):
             creds["PWD"] = pwd
 
         params = dict (
-            TRXTYPE="A"),
-            AMT=decimal.Decimal("1.00")
+            TRXTYPE="A",
+            AMT=decimal.Decimal("1.00"),
             CREATESECURETOKEN="Y",
             SECURETOKENID=uuid.uuid4().hex
         )
