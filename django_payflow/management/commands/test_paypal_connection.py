@@ -61,7 +61,7 @@ class Command(BaseCommand):
         if partner := options['partner']:
             creds["PARTNER"] = partner
         if vendor := options['vendor']:
-            creds["MERCHANT_LOGIN"] = vendor
+            creds["VENDOR"] = vendor
         if user := options['user']:
             creds["USER"] = user
         if pwd := options['pwd']:
