@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django_payflow"
-version = "2.0.2"
+version = "2.0.3"
 description = "A django app for interaction with the django_payflow api"
 homepage = "https://github.com/ImaginaryLandscape/django_payflow"
 readme = "README.md"
