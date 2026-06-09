@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django_payflow"
-version = "2.0.2"
+version = "2.0.3"
 description = "A django app for interaction with the django_payflow api"
 homepage = "https://github.com/ImaginaryLandscape/django_payflow"
 readme = "README.md"
@@ -8,8 +8,8 @@ authors = ["Imagescape <info@imagescape.com>"]
 license = "BSD"
 
 [tool.poetry.dependencies]
-python = "^3.7"
-django = ">=3.2,<5.0"
+python = ">=3.7,<3.15"
+django = ">=3.2,<5.3"
 requests = "^2.28.0"
 
 [build-system]
